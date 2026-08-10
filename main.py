@@ -12,6 +12,27 @@ client = OpenAI(
     api_key=os.environ["AZURE_AI_API_KEY"],
 )
 
+def cosine(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(y * y for y in b) ** 0.5
+    return dot / (norm_a * norm_b)
+
+
+def load_chunks(path):
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    return paragraphs
+
+
+chunks = load_chunks("posting.txt")
+chunk_vectors = [
+    d.embedding
+    for d in client.embeddings.create(model="text-embedding-3-large", input=chunks).data
+]
+print(f"Knowledge base ready: {len(chunks)} chunks embedded")
+
 app = FastAPI(title="Manuscript Assistant")
 
 
@@ -29,6 +50,14 @@ class BookMetadata(BaseModel):
     themes: list[str]
     audience: str
 
+
+class QuestionIn(BaseModel):
+    question: str
+
+
+class AnswerOut(BaseModel):
+    answer: str
+    sources: list[str]
 
 @app.get("/")
 def health():
@@ -58,3 +87,26 @@ def extract_metadata(manuscript: ManuscriptIn):
         response_format=BookMetadata,
     )
     return response.choices[0].message.parsed
+
+@app.post("/ask", response_model=AnswerOut)
+def ask(q: QuestionIn):
+    q_vec = client.embeddings.create(
+        model="text-embedding-3-large", input=[q.question]
+    ).data[0].embedding
+
+    scored = sorted(
+        zip(chunks, chunk_vectors),
+        key=lambda pair: cosine(q_vec, pair[1]),
+        reverse=True,
+    )
+    top_chunks = [chunk for chunk, vec in scored[:3]]
+    context = "\n\n".join(top_chunks)
+
+    response = client.chat.completions.create(
+        model=os.environ["AZURE_AI_DEPLOYMENT"],
+        messages=[
+            {"role": "system", "content": "Answer using ONLY the provided context. If the answer is not in the context, say you do not know."},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {q.question}"},
+        ],
+    )
+    return AnswerOut(answer=response.choices[0].message.content, sources=top_chunks)

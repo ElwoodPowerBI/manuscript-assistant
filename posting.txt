@@ -1,0 +1,19 @@
+Penguin Random House is seeking a Developer, Applied AI to join our Global Data Solutions team. We are looking for a hands-on developer who can help build, maintain, and enhance secure, reliable AI-enabled applications that improve how internal business teams access, process, and use enterprise data.
+
+This role sits at the intersection of Python backend engineering, Azure cloud services, enterprise data integration, document processing, and practical AI implementation. The successful candidate will work on applications that use large language models, Azure AI services, retrieval-based workflows, and APIs to solve real business problems and improve internal processes.
+
+The Developer will help support existing applications while also designing and building new solutions in response to evolving business needs. This includes working directly with stakeholders to understand requirements, recommending practical technical approaches, developing and testing applications, supporting deployments, and helping ensure solutions are secure, maintainable, and production ready.
+
+Required experience includes 3+ years of professional software development experience, including strong hands-on experience with Python. Experience building, maintaining, or supporting production applications in a cloud environment, preferably Microsoft Azure.
+
+Experience developing REST APIs and backend services using frameworks such as FastAPI, Flask, or similar. Practical experience integrating generative AI or large language model capabilities into applications.
+
+Familiarity with practical AI application patterns, such as prompt design, structured outputs, retrieval workflows, document processing, or orchestration. Familiarity with AI frameworks such as LangChain and structured-output tools such as Pydantic, JSON Schema, or similar.
+
+Experience using relevant Azure services in a production environment. This may include Azure Functions, Durable Functions, Azure OpenAI, Azure AI Search, Azure Document Intelligence, Blob Storage, Container Apps, Key Vault, Application Insights, or comparable services.
+
+Experience with Git-based development workflows, pull requests, code reviews, CI/CD pipelines, and deployment automation. Ability to troubleshoot production issues using logs, monitoring tools, and application diagnostics. Working knowledge of SQL or experience working with enterprise data sources.
+
+Additional helpful experience includes retrieval-augmented generation, vector search, embeddings, semantic chunking, or LLM-powered extraction workflows. Experience with Microsoft Fabric, Fabric Data Agents, Model Context Protocol, FastMCP, or other AI/data gateway patterns.
+
+Additional helpful experience also includes Docker, Azure Container Apps, Terraform, or other containerization and infrastructure tools. Familiarity
