@@ -7,9 +7,10 @@ from pydantic import BaseModel
 
 load_dotenv()
 
+
 client = OpenAI(
-    base_url=os.environ["AZURE_AI_ENDPOINT"].rstrip("/") + "/openai/v1/",
-    api_key=os.environ["AZURE_AI_API_KEY"],
+    base_url=os.environ.get("AZURE_AI_ENDPOINT", "https://placeholder").rstrip("/") + "/openai/v1/",
+    api_key=os.environ.get("AZURE_AI_API_KEY", "placeholder-key"),
 )
 
 def cosine(a, b):
@@ -26,13 +27,22 @@ def load_chunks(path):
     return paragraphs
 
 
-chunks = load_chunks("posting.txt")
-chunk_vectors = [
-    d.embedding
-    for d in client.embeddings.create(model="text-embedding-3-large", input=chunks).data
-]
-print(f"Knowledge base ready: {len(chunks)} chunks embedded")
+_knowledge_base = None
 
+
+def get_knowledge_base():
+    global _knowledge_base
+    if _knowledge_base is None:
+        chunks = load_chunks("posting.txt")
+        vectors = [
+            d.embedding
+            for d in client.embeddings.create(
+                model="text-embedding-3-large", input=chunks
+            ).data
+        ]
+        _knowledge_base = (chunks, vectors)
+        print(f"Knowledge base ready: {len(chunks)} chunks embedded")
+    return _knowledge_base
 app = FastAPI(title="Manuscript Assistant")
 
 
@@ -90,6 +100,8 @@ def extract_metadata(manuscript: ManuscriptIn):
 
 @app.post("/ask", response_model=AnswerOut)
 def ask(q: QuestionIn):
+    chunks, chunk_vectors = get_knowledge_base()
+
     q_vec = client.embeddings.create(
         model="text-embedding-3-large", input=[q.question]
     ).data[0].embedding
