@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from openai import OpenAI
 from pydantic import BaseModel
+from services.llm_service import summarize_text
 
 load_dotenv()
 
@@ -76,14 +77,13 @@ def health():
 
 @app.post("/summarize", response_model=SummaryOut)
 def summarize(manuscript: ManuscriptIn):
-    response = client.chat.completions.create(
-        model=os.environ["AZURE_AI_DEPLOYMENT"],
-        messages=[
-            {"role": "system", "content": "You are an editorial assistant at a publishing house. Be concise."},
-            {"role": "user", "content": f"Summarize in two sentences:\n\n{manuscript.text}"},
-        ],
+    summary = summarize_text(
+        ai_client=client,
+        deployment=os.environ["AZURE_AI_DEPLOYMENT"],
+        text=manuscript.text,
     )
-    return SummaryOut(summary=response.choices[0].message.content)
+
+    return SummaryOut(summary=summary)
 
 
 @app.post("/extract-metadata", response_model=BookMetadata)
