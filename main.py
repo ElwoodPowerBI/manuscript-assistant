@@ -1,9 +1,13 @@
 import os
+import io
 
+
+from fastapi import FastAPI, File, UploadFile
+from pypdf import PdfReader
 from dotenv import load_dotenv
-from fastapi import FastAPI
 from openai import OpenAI
 from pydantic import BaseModel
+from services.llm_service import summarize_text
 
 load_dotenv()
 
@@ -25,7 +29,18 @@ def load_chunks(path):
         text = f.read()
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
     return paragraphs
-
+def chunk_text(text, chunk_size=800, overlap=150):
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+        if end >= len(text):
+            break
+        start = end - overlap
+    return chunks
 
 _knowledge_base = None
 
@@ -69,6 +84,11 @@ class AnswerOut(BaseModel):
     answer: str
     sources: list[str]
 
+class UploadOut(BaseModel):
+    filename: str
+    characters: int
+    chunks: int
+
 @app.get("/")
 def health():
     return {"status": "ok"}
@@ -76,14 +96,13 @@ def health():
 
 @app.post("/summarize", response_model=SummaryOut)
 def summarize(manuscript: ManuscriptIn):
-    response = client.chat.completions.create(
-        model=os.environ["AZURE_AI_DEPLOYMENT"],
-        messages=[
-            {"role": "system", "content": "You are an editorial assistant at a publishing house. Be concise."},
-            {"role": "user", "content": f"Summarize in two sentences:\n\n{manuscript.text}"},
-        ],
+    summary = summarize_text(
+        ai_client=client,
+        deployment=os.environ["AZURE_AI_DEPLOYMENT"],
+        text=manuscript.text,
     )
-    return SummaryOut(summary=response.choices[0].message.content)
+
+    return SummaryOut(summary=summary)
 
 
 @app.post("/extract-metadata", response_model=BookMetadata)
@@ -97,6 +116,28 @@ def extract_metadata(manuscript: ManuscriptIn):
         response_format=BookMetadata,
     )
     return response.choices[0].message.parsed
+
+@app.post("/upload", response_model=UploadOut)
+async def upload(file: UploadFile = File(...)):
+    global _knowledge_base
+
+    raw = await file.read()
+    reader = PdfReader(io.BytesIO(raw))
+
+    text = ""
+    for page in reader.pages:
+        text += (page.extract_text() or "") + "\n"
+
+    chunks = chunk_text(text)
+    vectors = [
+        d.embedding
+        for d in client.embeddings.create(
+            model="text-embedding-3-large", input=chunks
+        ).data
+    ]
+    _knowledge_base = (chunks, vectors)
+
+    return UploadOut(filename=file.filename, characters=len(text), chunks=len(chunks))
 
 @app.post("/ask", response_model=AnswerOut)
 def ask(q: QuestionIn):
