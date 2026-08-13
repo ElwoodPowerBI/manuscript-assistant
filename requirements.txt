@@ -4,6 +4,8 @@ annotated-types==0.8.0
 anyio==4.14.2
 attrs==26.1.0
 Authlib==1.7.2
+azure-ai-documentintelligence==1.0.2
+azure-core==1.41.0
 beartype==0.22.9
 cachetools==7.1.7
 caio==0.12.2
@@ -34,6 +36,7 @@ httpx==0.28.1
 httpx-sse==0.4.3
 idna==3.18
 iniconfig==2.3.0
+isodate==0.7.2
 jaraco.classes==3.4.0
 jaraco.context==6.1.2
 jaraco.functools==4.6.0
